@@ -153,11 +153,11 @@ func zapLevelToMlogLevel(l zapcore.Level) LogLevel {
 	switch {
 	case -l >= klogLevelAll:
 		return LevelAll
-	case -l >= KlogLevelTrace:
+	case -l >= klogLevelTrace:
 		return LevelTrace
-	case -l >= KlogLevelDebug:
+	case -l >= klogLevelDebug:
 		return LevelDebug
-	case -l >= KlogLevelInfo:
+	case -l >= klogLevelInfo:
 		return LevelInfo
 	default:
 		return "" // warning is handled via a custom key since klog level 0 is ambiguous

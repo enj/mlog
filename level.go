@@ -31,9 +31,9 @@ var _ zapcore.LevelEnabler = LevelWarning
 
 const (
 	klogLevelWarning = iota * 2
-	KlogLevelInfo
-	KlogLevelDebug
-	KlogLevelTrace
+	klogLevelInfo
+	klogLevelDebug
+	klogLevelTrace
 	klogLevelAll
 )
 
@@ -51,11 +51,11 @@ func klogLevelForMlogLevel(mlogLevel LogLevel) klog.Level {
 	case LevelWarning:
 		return klogLevelWarning // unset means minimal logs (Error and Warning)
 	case LevelInfo:
-		return KlogLevelInfo
+		return klogLevelInfo
 	case LevelDebug:
-		return KlogLevelDebug
+		return klogLevelDebug
 	case LevelTrace:
-		return KlogLevelTrace
+		return klogLevelTrace
 	case LevelAll:
 		return klogLevelAll + 100 // make all really mean all
 	default:

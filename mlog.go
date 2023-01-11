@@ -57,13 +57,13 @@ type Logger interface {
 	withLogrMod(mod func(logr.Logger) logr.Logger) Logger
 }
 
-// MinLogger is the overlap between Logger and logr.Logger.
-type MinLogger interface {
+// minLogger is the overlap between Logger and logr.Logger.
+type minLogger interface {
 	Info(msg string, keysAndValues ...interface{})
 }
 
 var _ Logger = mLogger{}
-var _, _, _ MinLogger = mLogger{}, logr.Logger{}, Logger(nil)
+var _, _, _ minLogger = mLogger{}, logr.Logger{}, Logger(nil)
 
 type mLogger struct {
 	mods  []func(logr.Logger) logr.Logger
@@ -98,8 +98,8 @@ func (p mLogger) WarningErr(msg string, err error, keysAndValues ...interface{})
 }
 
 func (p mLogger) infoDepth(msg string, depth int, keysAndValues ...interface{}) {
-	if p.logr().V(KlogLevelInfo).Enabled() {
-		p.logr().V(KlogLevelInfo).WithCallDepth(depth+1).Info(msg, keysAndValues...)
+	if p.logr().V(klogLevelInfo).Enabled() {
+		p.logr().V(klogLevelInfo).WithCallDepth(depth+1).Info(msg, keysAndValues...)
 	}
 }
 
@@ -112,8 +112,8 @@ func (p mLogger) InfoErr(msg string, err error, keysAndValues ...interface{}) {
 }
 
 func (p mLogger) debugDepth(msg string, depth int, keysAndValues ...interface{}) {
-	if p.logr().V(KlogLevelDebug).Enabled() {
-		p.logr().V(KlogLevelDebug).WithCallDepth(depth+1).Info(msg, keysAndValues...)
+	if p.logr().V(klogLevelDebug).Enabled() {
+		p.logr().V(klogLevelDebug).WithCallDepth(depth+1).Info(msg, keysAndValues...)
 	}
 }
 
@@ -126,8 +126,8 @@ func (p mLogger) DebugErr(msg string, err error, keysAndValues ...interface{}) {
 }
 
 func (p mLogger) traceDepth(msg string, depth int, keysAndValues ...interface{}) {
-	if p.logr().V(KlogLevelTrace).Enabled() {
-		p.logr().V(KlogLevelTrace).WithCallDepth(depth+1).Info(msg, keysAndValues...)
+	if p.logr().V(klogLevelTrace).Enabled() {
+		p.logr().V(klogLevelTrace).WithCallDepth(depth+1).Info(msg, keysAndValues...)
 	}
 }
 

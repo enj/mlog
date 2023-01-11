@@ -173,7 +173,7 @@ testing.tRunner
   "does klog": "work?"
 }`, wd, startLogLine+2+13+14+11+12+24+28+6+11), scanner.Text())
 
-	Logr().WithName("panda").V(KlogLevelDebug).Info("are the best", "yes?", "yes.")
+	Logr().WithName("panda").V(klogLevelDebug).Info("are the best", "yes?", "yes.")
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
 	require.JSONEq(t, fmt.Sprintf(`
