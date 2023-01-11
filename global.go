@@ -39,8 +39,8 @@ func init() {
 	// this is a little crazy but zap's builder code does not allow us to directly specify what
 	// writer we want to use as our log sink.  to get around this limitation in tests, we use a
 	// global map to temporarily hold the writer (the key is a random string that is generated
-	// per invocation of newLogr).  we register a fake "pinniped" scheme so that we can lookup
-	// the writer via pinniped:///<per newLogr invocation random string>.
+	// per invocation of newLogr).  we register a fake "monis.app-mlog" scheme so that we can lookup
+	// the writer via monis.app-mlog:///<per newLogr invocation random string>.
 	if err := zap.RegisterSink("monis.app-mlog", func(u *url.URL) (zap.Sink, error) {
 		value, ok := sinkMap.Load(u.Path)
 		if !ok {

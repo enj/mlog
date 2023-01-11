@@ -30,7 +30,7 @@ func (l *LogFormat) UnmarshalJSON(b []byte) error {
 const (
 	FormatJSON LogFormat = "json"
 	FormatText LogFormat = "text"
-	FormatCLI  LogFormat = "cli" // only used by the pinniped CLI and not the server components
+	FormatCLI  LogFormat = "cli" // only meant to be used by CLI and not server components
 
 	errInvalidLogLevel  = constableError("invalid log level, valid choices are the empty string, info, debug, trace and all")
 	errInvalidLogFormat = constableError("invalid log format, valid choices are the empty string, json and text")
