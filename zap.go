@@ -1,7 +1,4 @@
-// Copyright 2020-2022 the Pinniped contributors. All Rights Reserved.
-// SPDX-License-Identifier: Apache-2.0
-
-package plog
+package mlog
 
 import (
 	"context"
@@ -17,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/duration"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -58,7 +56,7 @@ func newLogr(ctx context.Context, encoding string, klogLevel klog.Level) (logr.L
 			testKey := "/" + base64.RawURLEncoding.EncodeToString([]byte(rand.String(32)))
 
 			// tell zap to use our custom sink registry to find the writer
-			path = "pinniped://" + testKey
+			path = "monis.app-mlog://" + testKey
 
 			// the registry may be called multiple times so make sure the value is safe for concurrent use
 			sink := newSink(overrides.w)
@@ -135,16 +133,16 @@ func newZapr(level zap.AtomicLevel, addStack zapcore.LevelEnabler, encoding, pat
 }
 
 func levelEncoder(l zapcore.Level, enc zapcore.PrimitiveArrayEncoder) {
-	plogLevel := zapLevelToPlogLevel(l)
+	mlogLevel := zapLevelToMlogLevel(l)
 
-	if len(plogLevel) == 0 {
+	if len(mlogLevel) == 0 {
 		return // this tells zap that it should handle encoding the level itself because we do not know the mapping
 	}
 
-	enc.AppendString(string(plogLevel))
+	enc.AppendString(string(mlogLevel))
 }
 
-func zapLevelToPlogLevel(l zapcore.Level) LogLevel {
+func zapLevelToMlogLevel(l zapcore.Level) LogLevel {
 	if l > 0 {
 		// best effort mapping, the zap levels do not really translate to klog
 		// but this is correct for "error" level which is all we need for logr

@@ -1,7 +1,4 @@
-// Copyright 2020-2022 the Pinniped contributors. All Rights Reserved.
-// SPDX-License-Identifier: Apache-2.0
-
-package plog
+package mlog
 
 import (
 	"context"
@@ -15,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
 	"k8s.io/utils/clock"
 	clocktesting "k8s.io/utils/clock/testing"
 )

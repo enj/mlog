@@ -1,7 +1,4 @@
-// Copyright 2020-2022 the Pinniped contributors. All Rights Reserved.
-// SPDX-License-Identifier: Apache-2.0
-
-package plog
+package mlog
 
 import (
 	"context"
@@ -11,6 +8,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"go.uber.org/zap"
+
 	"k8s.io/component-base/logs"
 	"k8s.io/klog/v2"
 )
@@ -43,7 +41,7 @@ func init() {
 	// global map to temporarily hold the writer (the key is a random string that is generated
 	// per invocation of newLogr).  we register a fake "pinniped" scheme so that we can lookup
 	// the writer via pinniped:///<per newLogr invocation random string>.
-	if err := zap.RegisterSink("pinniped", func(u *url.URL) (zap.Sink, error) {
+	if err := zap.RegisterSink("monis.app-mlog", func(u *url.URL) (zap.Sink, error) {
 		value, ok := sinkMap.Load(u.Path)
 		if !ok {
 			return nil, fmt.Errorf("key %q not in global sink", u.Path)
@@ -68,7 +66,7 @@ func Setup() func() {
 	}
 }
 
-// setGlobalLoggers sets the plog and klog global loggers.  it is *not* go routine safe.
+// setGlobalLoggers sets the mlog and klog global loggers.  it is *not* go routine safe.
 func setGlobalLoggers(log logr.Logger, flush func()) {
 	// a contextual logger does its own level based enablement checks, which is true for all of our loggers
 	klog.SetLoggerWithOptions(log, klog.ContextualLogger(true), klog.FlushLogger(flush))

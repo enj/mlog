@@ -1,10 +1,8 @@
-// Copyright 2020-2021 the Pinniped contributors. All Rights Reserved.
-// SPDX-License-Identifier: Apache-2.0
-
-package plog
+package mlog
 
 import (
 	"go.uber.org/zap/zapcore"
+
 	"k8s.io/klog/v2"
 )
 
@@ -13,7 +11,7 @@ import (
 type LogLevel string
 
 func (l LogLevel) Enabled(_ zapcore.Level) bool {
-	return Enabled(l) // this basically says "log if the global plog level is l or greater"
+	return Enabled(l) // this basically says "log if the global mlog level is l or greater"
 }
 
 const (
@@ -39,17 +37,17 @@ const (
 	klogLevelAll
 )
 
-// Enabled returns whether the provided plog level is enabled, i.e., whether print statements at the
+// Enabled returns whether the provided mlog level is enabled, i.e., whether print statements at the
 // provided level will show up.
 func Enabled(level LogLevel) bool {
-	l := klogLevelForPlogLevel(level)
-	// check that both our global level and the klog global level agree that the plog level is enabled
+	l := klogLevelForMlogLevel(level)
+	// check that both our global level and the klog global level agree that the mlog level is enabled
 	// klog levels are inverted when zap handles them
 	return globalLevel.Enabled(zapcore.Level(-l)) && klog.V(l).Enabled()
 }
 
-func klogLevelForPlogLevel(plogLevel LogLevel) klog.Level {
-	switch plogLevel {
+func klogLevelForMlogLevel(mlogLevel LogLevel) klog.Level {
+	switch mlogLevel {
 	case LevelWarning:
 		return klogLevelWarning // unset means minimal logs (Error and Warning)
 	case LevelInfo:

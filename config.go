@@ -1,7 +1,4 @@
-// Copyright 2020-2022 the Pinniped contributors. All Rights Reserved.
-// SPDX-License-Identifier: Apache-2.0
-
-package plog
+package mlog
 
 import (
 	"context"
@@ -10,10 +7,9 @@ import (
 	"time"
 
 	"go.uber.org/zap/zapcore"
+
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/component-base/logs"
-
-	"go.pinniped.dev/internal/constable"
 )
 
 type LogFormat string
@@ -36,8 +32,8 @@ const (
 	FormatText LogFormat = "text"
 	FormatCLI  LogFormat = "cli" // only used by the pinniped CLI and not the server components
 
-	errInvalidLogLevel  = constable.Error("invalid log level, valid choices are the empty string, info, debug, trace and all")
-	errInvalidLogFormat = constable.Error("invalid log format, valid choices are the empty string, json and text")
+	errInvalidLogLevel  = constableError("invalid log level, valid choices are the empty string, info, debug, trace and all")
+	errInvalidLogFormat = constableError("invalid log format, valid choices are the empty string, json and text")
 )
 
 var _ json.Unmarshaler = func() *LogFormat {
@@ -50,15 +46,8 @@ type LogSpec struct {
 	Format LogFormat `json:"format,omitempty"`
 }
 
-func MaybeSetDeprecatedLogLevel(level *LogLevel, log *LogSpec) {
-	if level != nil {
-		Warning("logLevel is deprecated, set log.level instead")
-		log.Level = *level
-	}
-}
-
 func ValidateAndSetLogLevelAndFormatGlobally(ctx context.Context, spec LogSpec) error {
-	klogLevel := klogLevelForPlogLevel(spec.Level)
+	klogLevel := klogLevelForMlogLevel(spec.Level)
 	if klogLevel < 0 {
 		return errInvalidLogLevel
 	}

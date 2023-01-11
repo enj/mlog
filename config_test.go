@@ -1,7 +1,4 @@
-// Copyright 2020-2022 the Pinniped contributors. All Rights Reserved.
-// SPDX-License-Identifier: Apache-2.0
-
-package plog
+package mlog
 
 import (
 	"bufio"
@@ -16,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+
 	"k8s.io/component-base/logs"
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/textlogger"
@@ -43,7 +41,7 @@ func TestFormat(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
-	const startLogLine = 46 // make this match the current line number
+	const startLogLine = 44 // make this match the current line number
 
 	Info("hello", "happy", "day", "duration", time.Hour+time.Minute)
 	require.True(t, scanner.Scan())
@@ -52,7 +50,7 @@ func TestFormat(t *testing.T) {
 {
   "level": "info",
   "timestamp": "2022-11-21T23:37:26.953313Z",
-  "caller": "%s/config_test.go:%d$plog.TestFormat",
+  "caller": "%s/config_test.go:%d$mlog.TestFormat",
   "message": "hello",
   "happy": "day",
   "duration": "1h1m0s"
@@ -65,32 +63,32 @@ func TestFormat(t *testing.T) {
 {
   "level": "error",
   "timestamp": "2022-11-21T23:37:26.953313Z",
-  "caller": "%s/config_test.go:%d$plog.TestFormat",
+  "caller": "%s/config_test.go:%d$mlog.TestFormat",
   "message": "wee",
   "a": "b",
   "error": "invalid log level, valid choices are the empty string, info, debug, trace and all",
   "logger": "burrito"
 }`, wd, startLogLine+2+13), scanner.Text())
 
-	Logr().V(klogLevelWarning).Info("hey") // note that this fails to set the custom warning key because it is not via plog
+	Logr().V(klogLevelWarning).Info("hey") // note that this fails to set the custom warning key because it is not via mlog
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
 	require.JSONEq(t, fmt.Sprintf(`
 {
   "level": "info",
   "timestamp": "2022-11-21T23:37:26.953313Z",
-  "caller": "%s/config_test.go:%d$plog.TestFormat",
+  "caller": "%s/config_test.go:%d$mlog.TestFormat",
   "message": "hey"
 }`, wd, startLogLine+2+13+14), scanner.Text())
 
-	Warning("bad stuff") // note that this sets the custom warning key because it is via plog
+	Warning("bad stuff") // note that this sets the custom warning key because it is via mlog
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
 	require.JSONEq(t, fmt.Sprintf(`
 {
   "level": "info",
   "timestamp": "2022-11-21T23:37:26.953313Z",
-  "caller": "%s/config_test.go:%d$plog.TestFormat",
+  "caller": "%s/config_test.go:%d$mlog.TestFormat",
   "message": "bad stuff",
   "warning": true
 }`, wd, startLogLine+2+13+14+11), scanner.Text())
@@ -102,7 +100,7 @@ func TestFormat(t *testing.T) {
 {
   "level": "debug",
   "timestamp": "2022-11-21T23:37:26.953313Z",
-  "caller": "%s/config_test.go:%d$plog.TestFormat.func1",
+  "caller": "%s/config_test.go:%d$mlog.TestFormat.func1",
   "message": "something happened",
   "error": "invalid log format, valid choices are the empty string, json and text",
   "an": "item"
@@ -126,14 +124,14 @@ func TestFormat(t *testing.T) {
 {
   "level": "info",
   "timestamp": "2022-11-21T23:37:26.953313Z",
-  "caller": "%s/config_test.go:%d$plog.TestFormat",
+  "caller": "%s/config_test.go:%d$mlog.TestFormat",
   "message": "has a stack trace!",
   "logger": "stacky.does",
   "stacktrace": %s
 }`, wd, startLogLine+2+13+14+11+12+24,
 		strconv.Quote(
 			fmt.Sprintf(
-				`go.pinniped.dev/internal/plog.TestFormat
+				`monis.app/mlog.TestFormat
 	%s/config_test.go:%d
 testing.tRunner
 	%s/src/testing/testing.go:1446`,
@@ -150,13 +148,13 @@ testing.tRunner
 	DebugErr("something happened", errInvalidLogFormat, "an", "item")
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
-	require.Equal(t, fmt.Sprintf(nowStr+`  plog/config_test.go:%d  something happened  {"error": "invalid log format, valid choices are the empty string, json and text", "an": "item"}`,
+	require.Equal(t, fmt.Sprintf(nowStr+`  mlog/config_test.go:%d  something happened  {"error": "invalid log format, valid choices are the empty string, json and text", "an": "item"}`,
 		startLogLine+2+13+14+11+12+24+28), scanner.Text())
 
 	Logr().WithName("burrito").Error(errInvalidLogLevel, "wee", "a", "b", "slightly less than a year", 363*24*time.Hour, "slightly more than 2 years", 2*367*24*time.Hour)
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
-	require.Equal(t, fmt.Sprintf(nowStr+`  burrito  plog/config_test.go:%d  wee  {"a": "b", "slightly less than a year": "363d", "slightly more than 2 years": "2y4d", "error": "invalid log level, valid choices are the empty string, info, debug, trace and all"}`,
+	require.Equal(t, fmt.Sprintf(nowStr+`  burrito  mlog/config_test.go:%d  wee  {"a": "b", "slightly less than a year": "363d", "slightly more than 2 years": "2y4d", "error": "invalid log level, valid choices are the empty string, info, debug, trace and all"}`,
 		startLogLine+2+13+14+11+12+24+28+6), scanner.Text())
 
 	origTimeNow := textlogger.TimeNow
@@ -176,7 +174,7 @@ testing.tRunner
 	// check for the deprecation warning
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
-	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config.go:96] "setting log.format to 'text' is deprecated - this option will be removed in a future release" warning=true`,
+	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config.go:85] "setting log.format to 'text' is deprecated - this option will be removed in a future release" warning=true`,
 		pid), scanner.Text())
 
 	Debug("what is happening", "does klog", "work?")
