@@ -16,7 +16,6 @@ import (
 
 	"k8s.io/component-base/logs"
 	"k8s.io/klog/v2"
-	"k8s.io/klog/v2/textlogger"
 	clocktesting "k8s.io/utils/clock/testing"
 )
 
@@ -41,7 +40,7 @@ func TestFormat(t *testing.T) {
 	wd, err := os.Getwd()
 	require.NoError(t, err)
 
-	const startLogLine = 44 // make this match the current line number
+	const startLogLine = 43 // make this match the current line number
 
 	Info("hello", "happy", "day", "duration", time.Hour+time.Minute)
 	require.True(t, scanner.Scan())
@@ -157,61 +156,89 @@ testing.tRunner
 	require.Equal(t, fmt.Sprintf(nowStr+`  burrito  mlog/config_test.go:%d  wee  {"a": "b", "slightly less than a year": "363d", "slightly more than 2 years": "2y4d", "error": "invalid log level, valid choices are the empty string, info, debug, trace and all"}`,
 		startLogLine+2+13+14+11+12+24+28+6), scanner.Text())
 
-	origTimeNow := textlogger.TimeNow
-	t.Cleanup(func() {
-		textlogger.TimeNow = origTimeNow
-	})
-	textlogger.TimeNow = func() time.Time {
-		return now
-	}
-
 	old := New().WithName("created before mode change").WithValues("is", "old")
 
-	err = ValidateAndSetLogLevelAndFormatGlobally(ctx, LogSpec{Level: LevelDebug, Format: FormatText})
+	err = ValidateAndSetLogLevelAndFormatGlobally(ctx, LogSpec{Level: LevelDebug, Format: FormatJSON})
 	require.NoError(t, err)
-	pid := os.Getpid()
-
-	// check for the deprecation warning
-	require.True(t, scanner.Scan())
-	require.NoError(t, scanner.Err())
-	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config.go:85] "setting log.format to 'text' is deprecated - this option will be removed in a future release" warning=true`,
-		pid), scanner.Text())
 
 	Debug("what is happening", "does klog", "work?")
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
-	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config_test.go:%d] "what is happening" does klog="work?"`,
-		pid, startLogLine+2+13+14+11+12+24+28+6+26), scanner.Text())
+	require.JSONEq(t, fmt.Sprintf(`
+{
+  "level": "debug",
+  "timestamp": "2022-11-21T23:37:26.953313Z",
+  "caller": "%s/config_test.go:%d$mlog.TestFormat",
+  "message": "what is happening",
+  "does klog": "work?"
+}`, wd, startLogLine+2+13+14+11+12+24+28+6+11), scanner.Text())
 
 	Logr().WithName("panda").V(KlogLevelDebug).Info("are the best", "yes?", "yes.")
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
-	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config_test.go:%d] "panda: are the best" yes?="yes."`,
-		pid, startLogLine+2+13+14+11+12+24+28+6+26+6), scanner.Text())
+	require.JSONEq(t, fmt.Sprintf(`
+{
+  "level": "debug",
+  "timestamp": "2022-11-21T23:37:26.953313Z",
+  "caller": "%s/config_test.go:%d$mlog.TestFormat",
+  "logger": "panda",
+  "message": "are the best",
+  "yes?": "yes."
+}`, wd, startLogLine+2+13+14+11+12+24+28+6+11+12), scanner.Text())
 
 	New().WithName("hi").WithName("there").WithValues("a", 1, "b", 2).Always("do it")
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
-	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config_test.go:%d] "hi/there: do it" a=1 b=2`,
-		pid, startLogLine+2+13+14+11+12+24+28+6+26+6+6), scanner.Text())
+	require.JSONEq(t, fmt.Sprintf(`
+{
+  "level": "info",
+  "timestamp": "2022-11-21T23:37:26.953313Z",
+  "caller": "%s/config_test.go:%d$mlog.TestFormat",
+  "logger": "hi.there",
+  "message": "do it",
+  "a": 1,
+  "b": 2
+}`, wd, startLogLine+2+13+14+11+12+24+28+6+11+12+13), scanner.Text())
 
 	l := WithValues("x", 33, "z", 22)
 	l.Debug("what to do")
 	l.Debug("and why")
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
-	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config_test.go:%d] "what to do" x=33 z=22`,
-		pid, startLogLine+2+13+14+11+12+24+28+6+26+6+6+7), scanner.Text())
+	require.JSONEq(t, fmt.Sprintf(`
+{
+  "level": "debug",
+  "timestamp": "2022-11-21T23:37:26.953313Z",
+  "caller": "%s/config_test.go:%d$mlog.TestFormat",
+  "message": "what to do",
+  "x": 33,
+  "z": 22
+}`, wd, startLogLine+2+13+14+11+12+24+28+6+11+12+13+15), scanner.Text())
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
-	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config_test.go:%d] "and why" x=33 z=22`,
-		pid, startLogLine+2+13+14+11+12+24+28+6+26+6+6+7+1), scanner.Text())
+	require.JSONEq(t, fmt.Sprintf(`
+{
+  "level": "debug",
+  "timestamp": "2022-11-21T23:37:26.953313Z",
+  "caller": "%s/config_test.go:%d$mlog.TestFormat",
+  "message": "and why",
+  "x": 33,
+  "z": 22
+}`, wd, startLogLine+2+13+14+11+12+24+28+6+11+12+13+15+1), scanner.Text())
 
-	old.Always("should be klog text format", "for", "sure")
+	old.Always("should be json format", "for", "sure")
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
-	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config_test.go:%d] "created before mode change: should be klog text format" is="old" for="sure"`,
-		pid, startLogLine+2+13+14+11+12+24+28+6+26+6+6+7+1+10), scanner.Text())
+	require.JSONEq(t, fmt.Sprintf(`
+{
+  "level": "info",
+  "timestamp": "2022-11-21T23:37:26.953313Z",
+  "caller": "%s/config_test.go:%d$mlog.TestFormat",
+  "logger": "created before mode change",
+  "message": "should be json format",
+  "for": "sure",
+  "is": "old"
+}`, wd, startLogLine+2+13+14+11+12+24+28+6+11+12+13+15+1+24), scanner.Text())
 
 	// make sure child loggers do not share state
 	old1 := old.WithValues("i am", "old1")
@@ -220,12 +247,28 @@ testing.tRunner
 	old2.Info("info")
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
-	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config_test.go:%d] "created before mode change: warn" is="old" i am="old1" warning=true`,
-		pid, startLogLine+2+13+14+11+12+24+28+6+26+6+6+7+1+10+9), scanner.Text())
+	require.JSONEq(t, fmt.Sprintf(`
+{
+  "level": "info",
+  "timestamp": "2022-11-21T23:37:26.953313Z",
+  "caller": "%s/config_test.go:%d$mlog.TestFormat",
+  "logger": "created before mode change",
+  "message": "warn",
+  "i am": "old1",
+  "is": "old",
+  "warning": true
+}`, wd, startLogLine+2+13+14+11+12+24+28+6+11+12+13+15+1+24+17), scanner.Text())
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
-	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config_test.go:%d] "created before mode change/old2: info" is="old"`,
-		pid, startLogLine+2+13+14+11+12+24+28+6+26+6+6+7+1+10+9+1), scanner.Text())
+	require.JSONEq(t, fmt.Sprintf(`
+{
+  "level": "info",
+  "timestamp": "2022-11-21T23:37:26.953313Z",
+  "caller": "%s/config_test.go:%d$mlog.TestFormat",
+  "logger": "created before mode change.old2",
+  "message": "info",
+  "is": "old"
+}`, wd, startLogLine+2+13+14+11+12+24+28+6+11+12+13+15+1+24+17+1), scanner.Text())
 
 	Trace("should not be logged", "for", "sure")
 	require.Empty(t, buf.String())

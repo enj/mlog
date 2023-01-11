@@ -18,9 +18,7 @@ func (l *LogFormat) UnmarshalJSON(b []byte) error {
 	switch string(b) {
 	case `""`, `"json"`:
 		*l = FormatJSON
-	case `"text"`:
-		*l = FormatText
-	// there is no "cli" case because it is not a supported option via our config
+	// there is no "cli" case because it is not a supported option via server config
 	default:
 		return errInvalidLogFormat
 	}
@@ -29,7 +27,6 @@ func (l *LogFormat) UnmarshalJSON(b []byte) error {
 
 const (
 	FormatJSON LogFormat = "json"
-	FormatText LogFormat = "text"
 	FormatCLI  LogFormat = "cli" // only meant to be used by CLI and not server components
 
 	errInvalidLogLevel  = constableError("invalid log level, valid choices are the empty string, info, debug, trace and all")
@@ -64,8 +61,6 @@ func ValidateAndSetLogLevelAndFormatGlobally(ctx context.Context, spec LogSpec) 
 		encoding = "json"
 	case FormatCLI:
 		encoding = "console"
-	case FormatText:
-		encoding = "text"
 	default:
 		return errInvalidLogFormat
 	}
@@ -81,8 +76,6 @@ func ValidateAndSetLogLevelAndFormatGlobally(ctx context.Context, spec LogSpec) 
 	switch spec.Format {
 	case FormatCLI:
 		return nil // do not spawn go routines on the CLI to allow the CLI to call this more than once
-	case FormatText:
-		Warning("setting log.format to 'text' is deprecated - this option will be removed in a future release")
 	}
 
 	// do spawn go routines on the server
