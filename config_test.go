@@ -174,7 +174,7 @@ testing.tRunner
 	// check for the deprecation warning
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
-	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config.go:85] "setting log.format to 'text' is deprecated - this option will be removed in a future release" warning=true`,
+	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config.go:97] "setting log.format to 'text' is deprecated - this option will be removed in a future release" warning=true`,
 		pid), scanner.Text())
 
 	Debug("what is happening", "does klog", "work?")
@@ -232,6 +232,35 @@ testing.tRunner
 
 	Logr().V(klogLevelAll).Info("also should not be logged", "open", "close")
 	require.Empty(t, buf.String())
+
+	old3 := New().WithName("via klog level but created before")
+
+	err = ValidateAndSetKlogLevelAndFormatGlobally(ctx, 5, FormatJSON)
+	require.NoError(t, err)
+	require.Empty(t, buf.String())
+
+	old3.Trace("check trace")
+	old3.Debug("check debug")
+	require.True(t, scanner.Scan())
+	require.NoError(t, scanner.Err())
+	require.JSONEq(t, fmt.Sprintf(`
+{
+  "level": "debug",
+  "timestamp": "2022-11-21T23:37:26.953313Z",
+  "caller": "%s/config_test.go:%d$mlog.TestFormat",
+  "logger": "via klog level but created before",
+  "message": "check debug"
+}`, wd, startLogLine+2+13+14+11+12+24+28+6+26+6+6+7+1+10+9+1+23), scanner.Text())
+
+	err = ValidateAndSetKlogLevelAndFormatGlobally(ctx, 6, FormatText)
+	require.NoError(t, err)
+	require.Empty(t, buf.String())
+
+	old3.Trace("check trace again")
+	require.True(t, scanner.Scan())
+	require.NoError(t, scanner.Err())
+	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config_test.go:%d] "via klog level but created before: check trace again"`,
+		pid, startLogLine+2+13+14+11+12+24+28+6+26+6+6+7+1+10+9+1+23+16), scanner.Text())
 
 	require.False(t, scanner.Scan())
 	require.NoError(t, scanner.Err())

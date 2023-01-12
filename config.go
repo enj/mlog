@@ -10,6 +10,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/component-base/logs"
+	"k8s.io/klog/v2"
 )
 
 type LogFormat string
@@ -29,8 +30,8 @@ func (l *LogFormat) UnmarshalJSON(b []byte) error {
 
 const (
 	FormatJSON LogFormat = "json"
-	FormatText LogFormat = "text"
-	FormatCLI  LogFormat = "cli" // only meant to be used by CLI and not server components
+	FormatText LogFormat = "text" // Deprecated
+	FormatCLI  LogFormat = "cli"  // only meant to be used by CLI and not server components
 
 	errInvalidLogLevel  = constableError("invalid log level, valid choices are the empty string, info, debug, trace and all")
 	errInvalidLogFormat = constableError("invalid log format, valid choices are the empty string, json and text")
@@ -48,6 +49,16 @@ type LogSpec struct {
 
 func ValidateAndSetLogLevelAndFormatGlobally(ctx context.Context, spec LogSpec) error {
 	klogLevel := klogLevelForMlogLevel(spec.Level)
+
+	return validateAndSetKlogLevelAndFormatGlobally(ctx, klogLevel, spec.Format, true)
+}
+
+// Deprecated
+func ValidateAndSetKlogLevelAndFormatGlobally(ctx context.Context, klogLevel klog.Level, format LogFormat) error {
+	return validateAndSetKlogLevelAndFormatGlobally(ctx, klogLevel, format, false)
+}
+
+func validateAndSetKlogLevelAndFormatGlobally(ctx context.Context, klogLevel klog.Level, format LogFormat, warn bool) error {
 	if klogLevel < 0 {
 		return errInvalidLogLevel
 	}
@@ -59,7 +70,7 @@ func ValidateAndSetLogLevelAndFormatGlobally(ctx context.Context, spec LogSpec) 
 	globalLevel.SetLevel(zapcore.Level(-klogLevel)) // klog levels are inverted when zap handles them
 
 	var encoding string
-	switch spec.Format {
+	switch format {
 	case "", FormatJSON:
 		encoding = "json"
 	case FormatCLI:
@@ -78,11 +89,13 @@ func ValidateAndSetLogLevelAndFormatGlobally(ctx context.Context, spec LogSpec) 
 	setGlobalLoggers(log, flush)
 
 	//nolint:exhaustive  // the switch above is exhaustive for format already
-	switch spec.Format {
+	switch format {
 	case FormatCLI:
 		return nil // do not spawn go routines on the CLI to allow the CLI to call this more than once
 	case FormatText:
-		Warning("setting log.format to 'text' is deprecated - this option will be removed in a future release")
+		if warn {
+			Warning("setting log.format to 'text' is deprecated - this option will be removed in a future release")
+		}
 	}
 
 	// do spawn go routines on the server
