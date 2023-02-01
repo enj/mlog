@@ -89,7 +89,9 @@ func newLogr(ctx context.Context, encoding string, klogLevel klog.Level) (logr.L
 }
 
 func newZapr(level zap.AtomicLevel, addStack zapcore.LevelEnabler, encoding, path string, f func(config *zap.Config), opts ...zap.Option) (logr.Logger, func(), error) {
-	opts = append([]zap.Option{zap.AddStacktrace(addStack)}, opts...)
+	if encoding == "json" { // stack traces are too noisy otherwise
+		opts = append([]zap.Option{zap.AddStacktrace(addStack)}, opts...)
+	}
 
 	config := zap.Config{
 		Level:             level,
