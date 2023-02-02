@@ -262,7 +262,23 @@ testing.tRunner
 	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config_test.go:%d] "via klog level but created before: check trace again"`,
 		pid, startLogLine+2+13+14+11+12+24+28+6+26+6+6+7+1+10+9+1+23+16), scanner.Text())
 
-	require.False(t, scanner.Scan())
+	klog.Infof("unstructured text logs incorrectly have double newline: %v", 123)
+	require.True(t, scanner.Scan())
+	require.NoError(t, scanner.Err())
+	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config_test.go:%d] "unstructured text logs incorrectly have double newline: 123\n"`,
+		pid, startLogLine+2+13+14+11+12+24+28+6+26+6+6+7+1+10+9+1+23+16+6), scanner.Text())
+
+	err = ValidateAndSetKlogLevelAndFormatGlobally(ctx, 6, FormatCLI)
+	require.NoError(t, err)
+	require.Empty(t, buf.String())
+
+	klog.Infof("unstructured cli logs should not end in newlines: %v", 456)
+	require.True(t, scanner.Scan())
+	require.NoError(t, scanner.Err())
+	require.Equal(t, fmt.Sprintf(nowStr+`  mlog/config_test.go:%d  unstructured cli logs should not end in newlines: 456`,
+		startLogLine+2+13+14+11+12+24+28+6+26+6+6+7+1+10+9+1+23+16+6+10), scanner.Text())
+
+	require.False(t, scanner.Scan()) // this would report true if the log above ended in a newline
 	require.NoError(t, scanner.Err())
 	require.Empty(t, scanner.Text())
 	require.Empty(t, buf.String())
