@@ -262,10 +262,10 @@ testing.tRunner
 	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config_test.go:%d] "via klog level but created before: check trace again"`,
 		pid, startLogLine+2+13+14+11+12+24+28+6+26+6+6+7+1+10+9+1+23+16), scanner.Text())
 
-	klog.Infof("unstructured text logs incorrectly have double newline: %v", 123)
+	klog.Infof("unstructured text logs correctly have single newline: %v", 123)
 	require.True(t, scanner.Scan())
 	require.NoError(t, scanner.Err())
-	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config_test.go:%d] "unstructured text logs incorrectly have double newline: 123\n"`,
+	require.Equal(t, fmt.Sprintf(`I1121 23:37:26.953313%8d config_test.go:%d] "unstructured text logs correctly have single newline: 123"`,
 		pid, startLogLine+2+13+14+11+12+24+28+6+26+6+6+7+1+10+9+1+23+16+6), scanner.Text())
 
 	err = ValidateAndSetKlogLevelAndFormatGlobally(ctx, 6, FormatCLI)

@@ -1,6 +1,7 @@
 package mlog
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
@@ -34,6 +35,8 @@ func newLogr(ctx context.Context, encoding string, klogLevel klog.Level) (logr.L
 				flush = func() {}
 			}
 		}
+
+		w = &trimWriter{w: w}
 
 		return textlogger.NewLogger(textlogger.NewConfig(textlogger.Verbosity(int(klogLevel)), textlogger.Output(w))), flush, nil
 	}
@@ -222,4 +225,23 @@ func (t *trimCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
 
 func (t *trimCore) Sync() error {
 	return t.core.Sync()
+}
+
+var _ io.Writer = &trimWriter{}
+
+type trimWriter struct {
+	w io.Writer
+}
+
+var brokenNewlineThenQuoteThenActualNewline = []byte(`\n"
+`)
+
+func (t *trimWriter) Write(p []byte) (int, error) {
+	if bytes.HasSuffix(p, brokenNewlineThenQuoteThenActualNewline) {
+		// overwrite the broken newline with the quote and correct newline
+		p[len(p)-4] = '"'
+		p[len(p)-3] = '\n'
+		p = p[:len(p)-2] // then just slice off the original quote and newline
+	}
+	return t.w.Write(p)
 }
